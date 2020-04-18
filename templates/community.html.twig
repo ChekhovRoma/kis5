@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Сообщества{% endblock %}</title>
+    {% block stylesheets %}{% endblock %}
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+</head>
+<body>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-4 border border-primary">
+            <div class="row">
+                <h1>Добавление</h1>
+                <form method="post" action="/postCommunity" id="comment">
+                    <div class="col-10">
+                        <label for="postTitle">Название Сообщества</label>
+                        <input type="text" name="communityName" id="communityName" class="form-control-sm">
+                    </div>
+                    <div class="col-10">
+                        <label for="postTitle">Описание Сообщества</label>
+                        <input type="text" name="communityDescription" id="communityDescription" class="form-control-sm">
+                    </div>
+                    <div class="col-10">
+                        <label for="postTitle">Тэги</label></br>
+                        <input type="text" name="tags" id="tags" class="form-control-sm">
+                    </div>
+                    <div class="col-10">
+                        <label for="description">Администратор сообщества</label>
+                        <select name="adminId" class='form-control' >
+                            <option>Нет пользователей</option>
+                            {% for user in users %}
+                                <option value="{{ user.getId() }}">{{ user.getId() }}  {{ user.getName() }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-10"><input type="submit" class="btn btn-primary mt-3" value="POST"></div>
+                </form>
+            </div>
+        </div>
+        <div class="col-4 border border-warning">
+            <h1>Изменение</h1>
+            <form method="post" action="/putCommunity" id="change">
+                <input type="hidden" name="_method" value="PUT">
+                <div class="col-10">
+                    <label for="id">ID сообщества</label></br>
+                    <input type="text" name="id" id="changeId" class="form-control-sm">
+                </div>
+                <div class="col-10">
+                    <label for="postTitle">Название Сообщества</label>
+                    <input type="text" name="communityName" id="communityName" class="form-control-sm">
+                </div>
+                <div class="col-10">
+                    <label for="postTitle">Описание Сообщества</label>
+                    <input type="text" name="communityDescription" id="communityDescription" class="form-control-sm">
+                </div>
+                <div class="col-10">
+                    <label for="postTitle">Тэги</label></br>
+                    <input type="text" name="tags" id="tags" class="form-control-sm">
+                </div>
+                <div class="col-10">
+                    <label for="description">Администратор сообщества</label>
+                    <select name="adminId" class='form-control' >
+                        <option>Нет пользователей</option>
+                        {% for user in users %}
+                            <option value="{{ user.getId() }}">{{ user.getId() }}  {{ user.getName() }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-10"><input type="submit" class="btn btn-warning mt-3" value="Put"></div>
+            </form>
+        </div>
+        <div class="col-4 border border-danger">
+            <h1>Удаление</h1>
+            <form method="post" action="/deleteCommunity" id="delete">
+                <input type="hidden" name="_method" value="DELETE">
+                <div class="col-7">
+                    <label for="id">Введите ID Сообщества</label>
+                    <input type="text" name="id" id="deleteId" class="form-control-sm">
+                </div>
+                <div class="col-7"><input type="submit" class="btn btn-danger mt-3" value="Delete"></div>
+            </form>
+        </div>
+    </div>
+</div>
+<script>
+
+
+    $('#changeId').change(function(event){
+        $('#change').attr('action','/putCommunity/'+ event.target.value);
+    });
+
+    $('#deleteId').change(function(event){
+        $('#delete').attr('action','/deleteCommunity/'+ event.target.value);
+    });
+
+</script>
+</body>
+</html>

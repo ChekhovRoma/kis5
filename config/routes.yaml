@@ -1,5 +1,10 @@
 
 # Сообщества
+indexCommunities:
+  path:       /indexCommunities
+  controller: App\Controller\CommunitiesController::index
+  methods:    GET
+
 GetCommunities:
   path:       /getCommunities
   controller: App\Controller\CommunitiesController::GetCommunities
@@ -32,6 +37,11 @@ DeleteCommunity:
     id: 4f6cf35x-2c4y-483z-a0a9-158621f77a21
 
 #Посты
+indexPost:
+  path:       /indexPost
+  controller: App\Controller\PostsController::index
+  methods:    GET
+
 GetPosts:
   path:       /getPosts
   controller: App\Controller\PostsController::GetPosts
@@ -64,6 +74,11 @@ DeletePost:
     id: 126cf35x-2c4y-483z-a0a9-158621f77a21
 
 # Комментарии
+indexComments:
+  path:       /indexComment
+  controller: App\Controller\CommentsController::index
+  methods:    GET
+
 GetCommentsByPostId:
   path:       /getCommentsByPostId/{postID}
   controller: App\Controller\CommentsController::GetComments
@@ -103,6 +118,11 @@ DeleteComment:
 GetUsers:
   path:       /getUsers
   controller: App\Controller\UsersController::GetUsers
+  methods:    GET
+
+indexUser:
+  path:       /indexUser
+  controller: App\Controller\UsersController::index
   methods:    GET
 
 GetUser:

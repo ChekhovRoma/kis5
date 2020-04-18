@@ -3,7 +3,11 @@
 
 namespace App\Controller;
 
+use App\Entity\Community;
+use App\Entity\Post;
+use App\Entity\User;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 
@@ -57,18 +61,71 @@ class CommunitiesController extends AbstractController
         return $community;
     }
 
-    public function PostCommunity()
+    public function PostCommunity(Request $request):Response
     {
-        return $this->json(['response' => 'Community has been added successfully']);
+        $entityManager = $this->getDoctrine()->getManager();
+        $community = new Community();
+
+        $community->setName($request->request->get('communityName'));
+        $community->setDescription($request->request->get('communityDescription'));
+        $community->setTags([$request->request->get('tags')]);
+        $admin = $this->getDoctrine()
+            ->getRepository(User::class)
+            ->find($request->request->get('adminId'));
+        $community->setAdminId($admin);
+        $community->setCreatedTime(new \DateTime('now'));
+        $community->setUpdatedTime(new \DateTime('now'));
+
+
+        $entityManager->persist($community);
+        $entityManager->flush();
+
+        return new Response('Saved User with id '.$community->getName());
     }
 
-    public function PutCommunity($id)
+    public function PutCommunity($id, Request $request):Response
     {
-        return $this->json(['response' => 'Community with id ' . $id . ' has been changed successfully']);
+        $entityManager = $this->getDoctrine()->getManager();
+        $community = $entityManager->getRepository(Community::class)->find($id);
+        $isExist = true;
+        if (!$community) {
+            $community = new Community();
+            $isExist = false;
+        }
+
+        $community->setName($request->request->get('communityName'));
+        $community->setDescription($request->request->get('communityDescription'));
+        $community->setTags([$request->request->get('tags')]);
+        $admin = $this->getDoctrine()
+            ->getRepository(User::class)
+            ->find($request->request->get('adminId'));
+        $community->setAdminId($admin);
+        $community->setCreatedTime(new \DateTime('now'));
+        $community->setUpdatedTime(new \DateTime('now'));
+
+
+        $entityManager->persist($community);
+        $entityManager->flush();
+
+        if ($isExist) return new Response('Edited new community '. $community->getName());
+        return new Response('Existed new community '.$community->getName());
+
     }
 
-    public function DeleteCommunity($id)
+    public function DeleteCommunity($id):Response
     {
-        return $this->json(['response' => 'Community with id ' . $id . ' has been deleted successfully']);
+        $entityManager = $this->getDoctrine()->getManager();
+        $community = $entityManager->getRepository(Community::class)->find($id);
+        if (!$community) return new Response('Сообщества с таким id нет :(');
+        $entityManager->remove($community);
+        $entityManager->flush();
+        return new Response('Сообщество c индентификатором '.$id.' было уничтожено и стерто!');
+    }
+
+    public function index(){
+        $users = $this->getDoctrine()
+            ->getRepository(User::class)
+            ->findAll();
+        return $this->render('community.html.twig', ['users'=>$users]);
     }
 }

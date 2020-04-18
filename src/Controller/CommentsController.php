@@ -2,77 +2,128 @@
 
 namespace App\Controller;
 
+use App\Entity\Comment;
+use App\Entity\Post;
+use App\Entity\User;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 class CommentsController extends AbstractController
 {
     public function GetComments($postID)
     {
-        $comments = $this->json([
-            'comments' => [
-                [
-                    'id' => '126cf35x-2c4y-483z-a0a9-158621f77a21',
-                    'postID' => $postID,
-                    'authorId' => '666cf35x-2c4y-000z-a111-153331f77a21',
-                    'commentText' => 'Mem smeshnoi a situaciya strshnaya',
-                    'likes' => 300,
-                    "postedTime" => "2020-04-04T17:49:05Z",
-                    "updatedTime" => "2020-04-04T17:49:05Z"
-                ],
-                [
-                    'id' => '1244435x-2c4y-483z-a0a9-158621f77a21',
-                    'postID' => $postID,
-                    'authorId' => '777cf35x-2c4y-000z-a111-153331f77a21',
-                    'commentText' => 'Mem ne smeshnoi a situaciya ne strshnaya',
-                    'likes' => 100,
-                    "postedTime" => "2020-04-04T17:49:05Z",
-                    "updatedTime" => "2020-04-04T17:49:05Z"
-                ],
-                [
-                    'id' => '1299935x-2c4y-483z-a0a9-158621f77a21',
-                    'postID' => $postID,
-                    'authorId' => '999cf35x-2c4y-000z-a111-153331f77a21',
-                    'commentText' => 'like esli lubish mamu',
-                    'likes' => 500,
-                    "postedTime" => "2020-05-04T17:49:05Z",
-                    "updatedTime" => "2020-05-04T17:49:05Z"
-                ],
-            ]
-        ]);
-        return $comments;
+        $comments = $this->getDoctrine()
+            ->getRepository(Comment::class)
+            ->findALL($postID);
+        if (!$comments){
+            return new Response("К сожалению нет ни одного комента :(");
+        }
+
+        foreach ($comments as $comment){
+            echo $comment->getId();
+            echo '<br/>';
+            $author = $comment->getAuthor();
+            echo $author->getName();
+            echo '<br/>';
+            echo $comment->getText();
+            echo '<br/>';
+            echo $comment->getLikes();
+            echo '<br/><br/>';
+
+        }
+        return new Response("Успешно!");
     }
 
-    public function CreateComment($postID)
+    public function CreateComment($postID, Request $request):Response
     {
-        return $this->json(['response' => 'Comment under post: ' . $postID . ' has been created successfully']);
+
+        $entityManager = $this->getDoctrine()->getManager();
+        $comment = new Comment();
+        $post = $this->getDoctrine()
+            ->getRepository(Post::class)
+            ->find($postID);
+
+        $comment->setPost($post);
+
+        $author = $this->getDoctrine()
+            ->getRepository(User::class)
+            ->find($request->request->get('authorId'));
+        $comment->setAuthor($author);
+        $comment->setText($request->request->get('commentText'));
+        $comment->setLikes('0');
+        $comment->setPostedTime(new \DateTime('now'));
+        $comment->setUpdatedTime(new \DateTime('now'));
+
+        // tell Doctrine you want to (eventually) save the Product (no queries yet)
+        $entityManager->persist($comment);
+
+        // actually executes the queries (i.e. the INSERT query)
+        $entityManager->flush();
+
+        return new Response('Saved Comment with id '.$comment->getId());
     }
 
     public function GetComment($id)
     {
-        $comment = $this->json([
-            'comment' => [
-                [
-                    'id' => '126cf35x-2c4y-483z-a0a9-158621f77a21',
-                    'postID' => $id,
-                    'authorId' => '666cf35x-2c4y-000z-a111-153331f77a21',
-                    'commentText' => 'Mem smeshnoi a situaciya strshnaya',
-                    'likes' => 300,
-                    "postedTime" => "2020-04-04T17:49:05Z",
-                    "updatedTime" => "2020-04-04T17:49:05Z"
-                ],
-            ]
-        ]);
-        return $comment;
+        $comment = $this->getDoctrine()
+            ->getRepository(Comment::class)
+            ->find($id);
+
+        return new Response("Успешно! Найден комментарий с id: ". $comment->getText());
     }
 
-    public function PutComment($id)
+    public function PutComment($id,Request $request):Response
     {
-        return $this->json(['response' => 'Comment with id ' . $id . ' has been changed successfully']);
+        $entityManager = $this->getDoctrine()->getManager();
+        $comment = $entityManager->getRepository(Comment::class)->find($id);
+        $isExist = true;
+        if (!$comment) {
+            $comment = new Comment();
+            $isExist = false;
+        }
+
+        $post = $this->getDoctrine()
+            ->getRepository(Post::class)
+            ->find($request->request->get('postId'));
+
+        $comment->setPost($post);
+
+        $author = $this->getDoctrine()
+            ->getRepository(User::class)
+            ->find($request->request->get('authorId'));
+        $comment->setAuthor($author);
+        $comment->setText($request->request->get('commentText'));
+        if(!$isExist){
+            $comment->setLikes('0');
+            $comment->setPostedTime(new \DateTime('now'));
+        }
+        $comment->setUpdatedTime(new \DateTime('now'));
+
+        $entityManager->persist($comment);
+        $entityManager->flush();
+
+        if ($isExist) return new Response('Edited comment with id '. $comment->getId() . $comment->getText());
+        return new Response('Existed new comment with id '. $comment->getId() . $comment->getText());
     }
 
     public function DeleteComment($id)
     {
-        return $this->json(['response' => 'Comment with id ' . $id . ' has been deleted successfully']);
+        $entityManager = $this->getDoctrine()->getManager();
+        $comment = $entityManager->getRepository(Comment::class)->find($id);
+        if (!$comment) return new Response('Комментария с таким id нет :(');
+        $entityManager->remove($comment);
+        $entityManager->flush();
+        return new Response('Коммент c индентификатором '.$id.' был уничтожен и стерт!');
+    }
+
+    public function index(){
+        $users = $this->getDoctrine()
+            ->getRepository(User::class)
+            ->findAll();
+        $posts = $this->getDoctrine()
+            ->getRepository(Post::class)
+            ->findAll();
+        return $this->render('comment.html.twig', ['users'=>$users,'posts'=>$posts]);
     }
 }

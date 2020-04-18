@@ -2,85 +2,141 @@
 
 namespace App\Controller;
 
+use App\Entity\User;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
+use App\Entity\Post;
 
 class PostsController extends AbstractController
 {
     public function GetPosts()
     {
-        $posts = $this->json([
-            'posts' => [
-                [
-                    'id' => '126cf35x-2c4y-483z-a0a9-158621f77a21',
-                    'authorID' => '322rf35x-2c4y-483z-a0a9-158621f77a21',
-                    'postTitle' => 'Milii Kot',
-                    'postText' => 'Milii Kotek delaet mimimi',
-                    'tags' => ["cute", "animals", "mimimi"],
-                    'likes' => 100,
-                    'views' => 500,
-                    "postedTime" => "2020-04-04T17:49:05Z",
-                    "updatedTime" => "2020-04-04T17:49:05Z"
-                ],
-                [
-                    'id' => '127cf35x-2c4y-483z-a0a9-158621f77a21',
-                    'authorID' => '322rf35x-2c4y-483z-a0a9-158621f77a21',
-                    'postTitle' => 'Milii Pes',
-                    'postText' => 'Milii Pes delaet GAV',
-                    'tags' => ["cute", "animals", "GAV"],
-                    'likes' => 101,
-                    'views' => 500,
-                    "postedTime" => "2020-05-04T17:49:05Z",
-                    "updatedTime" => "2020-05-04T17:49:05Z"
-                ],
-                [
-                    'id' => '129cf35x-2c4y-483z-a0a9-158621f77a21',
-                    'authorID' => '322rf35x-2c4y-483z-a0a9-158621f77a21',
-                    'postTitle' => 'Milii KotPes',
-                    'postText' => 'Milii KotPes delaet ???',
-                    'tags' => ["cute", "animals", "??"],
-                    'likes' => 1000,
-                    'views' => 5000,
-                    "postedTime" => "2020-05-05T17:49:05Z",
-                    "updatedTime" => "2020-05-05T17:49:05Z"
-                ],
-            ]
-        ]);
-        return $posts;
+        $posts = $this->getDoctrine()
+            ->getRepository(Post::class)
+            ->findAll();
+        if (!$posts){
+            return new Response("К сожалению нет ни одного поста :(");
+        }
+        foreach ($posts as $post){
+            echo $post->getId();
+            echo '<br/>';
+            $author = $post->getAuthor();
+            echo $author->getName();
+            echo '<br/>';
+            echo $post->getTitle();
+            echo '<br/>';
+            echo $post->getText();
+            echo '<br/>';
+            echo $post->getLikes();
+            echo '<br/>';
+            echo $post->getViews();
+            echo '<br/><br/>';
+        }
+        return new Response("Успешно!");
     }
 
     public function GetPost($id)
     {
-        $post = $this->json([
-            'post' => [
-                [
-                    'id' => $id,
-                    'authorID' => '322rf35x-2c4y-483z-a0a9-158621f77a21',
-                    'postTitle' => 'Milii Kot',
-                    'postText' => 'Milii Kotek delaet mimimi',
-                    'tags' => ["cute", "animals", "mimimi"],
-                    'likes' => 100,
-                    'views' => 500,
-                    "postedTime" => "2020-04-04T17:49:05Z",
-                    "updatedTime" => "2020-04-04T17:49:05Z"
-                ],
-            ]
-        ]);
-        return $post;
+        $post = $this->getDoctrine()
+            ->getRepository(Post::class)
+            ->find($id);
+
+        if (!$post) {
+            return new Response('Поcта с идентификатором '.$id.' не существует');
+        }else{
+            var_dump($post->getText());//не понимаю почему но в юзер контроллере работает здесь нет(((
+            $post = $this->json([
+                'post' => [
+                    [
+                        "id"=> $id,
+                        "title"=> $post->getTitle(),
+                        "text"=>  $post->getText(),
+                        "likes"=> $post->getLikes(),
+                        "views"=> $post->getViews(),
+                        "createdTime"=> $post->getPostedTime(),
+                        "updatedTime"=> $post->getUpdateTime(),
+
+                    ],
+                ]
+            ]);
+        }
+        return new Response('Пост: '. $post->getContent());
     }
 
-    public function PostPost()
+    public function PostPost(Request $request):Response
     {
-        return $this->json(['response' => 'Post has been added successfully']);
+        $entityManager = $this->getDoctrine()->getManager();
+
+        $post = new Post();
+        $author = $this->getDoctrine()
+            ->getRepository(User::class)
+            ->find($request->request->get('authorId'));
+        $post->setAuthor($author);
+        $post->setTitle($request->request->get('postTitle'));
+        $post->setText($request->request->get('postText'));
+        $post->setTags([$request->request->get('tags')]);
+        $post->setLikes(0);
+        $post->setViews(0);
+        $post->setPostedTime(new \DateTime('now'));
+        $post->setUpdateTime(new \DateTime('now'));
+
+        // tell Doctrine you want to (eventually) save the Product (no queries yet)
+        $entityManager->persist($post);
+
+        // actually executes the queries (i.e. the INSERT query)
+        $entityManager->flush();
+
+        return new Response('Saved new plan with id '.$post->getId());
     }
 
-    public function PutPost($id)
+    public function PutPost($id,Request $request):Response
     {
-        return $this->json(['response' => 'Post with id ' . $id . ' has been changed successfully']);
+        $entityManager = $this->getDoctrine()->getManager();
+        $post = $entityManager->getRepository(Post::class)->find($id);
+        $isExist = true;
+        if (!$post) {
+            $post = new Post();
+            $isExist = false;
+        }
+
+        $author = $this->getDoctrine()
+            ->getRepository(User::class)
+            ->find($request->request->get('authorId'));
+        $post->setAuthor($author);
+        $post->setTitle($request->request->get('postTitle'));
+        $post->setText($request->request->get('postText'));
+        $post->setTags([$request->request->get('tags')]);
+        $post->setLikes(0);
+        $post->setViews(0);
+        $post->setPostedTime(new \DateTime('now'));
+        $post->setUpdateTime(new \DateTime('now'));
+
+        // tell Doctrine you want to (eventually) save the Product (no queries yet)
+        $entityManager->persist($post);
+
+        // actually executes the queries (i.e. the INSERT query)
+        $entityManager->flush();
+
+        if ($isExist) return new Response('Edited post with id '.$post->getId());
+        return new Response('Existed new post with id '.$post->getId());
     }
 
-    public function DeletePost($id)
+    public function DeletePost($id):Response
     {
-        return $this->json(['response' => 'Post with id ' . $id . ' has been deleted successfully']);
+        $entityManager = $this->getDoctrine()->getManager();
+        $post = $entityManager->getRepository(Post::class)->find($id);
+        if (!$post) return new Response('Поста с таким id нет :(');
+        $entityManager->remove($post);
+        $entityManager->flush();
+        return new Response('Пост c индентификатором '.$id.' был уничтожен и стерт!');
+    }
+
+    public function index(){
+        $users = $this->getDoctrine()
+            ->getRepository(User::class)
+            ->findAll();
+        return $this->render('post.html.twig', ['users'=>$users]);
     }
 }
